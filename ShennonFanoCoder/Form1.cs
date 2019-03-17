@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ using System.Windows.Forms;
 
 namespace ShennonFanoCoder
 {
-    
+
 
     public partial class Form1 : Form
     {
@@ -18,13 +19,13 @@ namespace ShennonFanoCoder
         int N; //amount of symbols
         public List<symbol> Cfile; //symbols of file to code in array = alphabet
         char[] messfile; //the whole message from the file to code
-       // TreeView<symbol> Tree; //TreeNode -- node
+                         // TreeView<symbol> Tree; //TreeNode -- node
 
         public class Tree<T>
         {
-            public int weight=0;//sums of parts of table
+            public int weight = 0;//sums of parts of table
             public Tree<T> Left, Right;
-            public T leave=default(T);//null
+            public T leave = default(T);//null
             public Tree<T> parent;
         }
 
@@ -34,8 +35,9 @@ namespace ShennonFanoCoder
         public class symbol
         {
             public char ch; // the symbol itself
-            public int prob=0; // number of symbol and their probability
-            public string code=""; //the code they are going to have
+            public int prob = 0; // number of symbol and their probability
+            public string code = ""; //the code they are going to have
+           public List<Byte> byteList = new List<Byte>();
         }
 
 
@@ -56,9 +58,8 @@ namespace ShennonFanoCoder
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBox1.Text = openFileDialog1.FileName;
+                Opening();
             }
-
-            Opening();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -67,8 +68,8 @@ namespace ShennonFanoCoder
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBox1.Text = openFileDialog1.FileName;
+                Opening();
             }
-            Opening();
         } //open file
 
         void Opening()
@@ -124,7 +125,7 @@ namespace ShennonFanoCoder
             Sort();
         }
 
-       
+
 
         public class NameComparer : IComparer<symbol>
         {
@@ -147,33 +148,34 @@ namespace ShennonFanoCoder
             NameComparer cn = new NameComparer();
             Cfile.Sort(cn);
             CreateTree();
+            Packing();
         }
 
         void CreateTree()
         {
-           Tree<symbol> tree = new Tree<symbol>();
-          
-            int sum=0;
+            Tree<symbol> tree = new Tree<symbol>();
+
+            int sum = 0;
             for (int i = 0; i < Cfile.Count; i++)
             {
                 sum += Cfile[i].prob;
             }
             tree.weight = sum;
             tree.parent = null;
-            BuildingTree(0,Cfile.Count-1,sum,tree);
+            BuildingTree(0, Cfile.Count - 1, sum, tree);
         }
 
-        void BuildingTree(int Li, int Ri, int sum, Tree<symbol> node) 
-                                        //index Left, Right, Sum of all elements, parent
+        void BuildingTree(int Li, int Ri, int sum, Tree<symbol> node)
+        //index Left, Right, Sum of all elements, parent
         {
-            int Lb =Li, Rb = Ri;
-            int sumL= Cfile[Li].prob, sumR= sum - Cfile[Li].prob; //sums of the parts
-            
-            for (int LeftIndex = Li+1; (LeftIndex < Cfile.Count) && (sumL + Cfile[LeftIndex].prob <= sumR - Cfile[LeftIndex].prob); LeftIndex++) //while  sums are not close
+            int Lb = Li, Rb = Ri;
+            int sumL = Cfile[Li].prob, sumR = sum - Cfile[Li].prob; //sums of the parts
+
+            for (int LeftIndex = Li + 1; (LeftIndex < Cfile.Count) && (sumL + Cfile[LeftIndex].prob <= sumR - Cfile[LeftIndex].prob); LeftIndex++) //while  sums are not close
             {
                 sumL += Cfile[LeftIndex].prob;
                 sumR -= Cfile[LeftIndex].prob;
-   
+
                 Li++;
             }
             Tree<symbol> node1 = new Tree<symbol>();
@@ -188,116 +190,91 @@ namespace ShennonFanoCoder
             node2.parent = node;
             if (Li < Cfile.Count && Rb < Cfile.Count)
             {
-                if (sumL>0)
-                if (Li - Lb == 0) //if consists of one element
-                {
-                    node1.leave = Cfile[Lb];
+                if (sumL > 0)
+                    if (Li - Lb == 0) //if consists of one element
+                    {
+                        node1.leave = Cfile[Lb];
                         node1.leave.code += "0";
-                    Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code);
-                }
-                else
-                {
-                    Console.WriteLine("Recursion L -");
-                        for (int i=Lb;i<=Li;i++)
+                        node1.leave.byteList.Add(0);
+                      //  node1.leave.byteList.Add(Convert.ToByte(0, 2));
+                        Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code + " byte " + Encoding.ASCII.GetString(node1.leave.byteList.ToArray()));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Recursion L -");
+                        for (int i = Lb; i <= Li; i++)
                         {
                             Cfile[i].code += "0";
+                            Cfile[i].byteList.Add(0);
                         }
-                    BuildingTree(Lb, Li, sumL, node1);
+                        BuildingTree(Lb, Li, sumL, node1);
 
-                }
-                if (sumR>0)
-                if (Rb - (Li+1) == 0) //if consists of one element
-                {
-                    
-                    node2.leave = Cfile[Rb];
+                    }
+                if (sumR > 0)
+                    if (Rb - (Li + 1) == 0) //if consists of one element
+                    {
+
+                        node2.leave = Cfile[Rb];
                         node2.leave.code += "1";
-                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code);
-                }
-                else
-                {
-                    Console.WriteLine("Recursion R - ");
-                        for (int i = Li+1; i <= Rb; i++)
+                        node2.leave.byteList.Add(1);
+                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code + " byte " + Encoding.ASCII.GetString(node2.leave.byteList.ToArray()));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Recursion R - ");
+                        for (int i = Li + 1; i <= Rb; i++)
                         {
                             Cfile[i].code += "1";
+                            Cfile[i].byteList.Add(1);
                         }
-                        BuildingTree(Li+1, Rb, sumR, node2);
+                        BuildingTree(Li + 1, Rb, sumR, node2);
 
-                }
+                    }
             }
         }
 
-        /*  void Quick_sort(symbol[] b, char left, char right)
-          {
-              char i = left, j = right;
-              symbol swap;
-              //   int t = b[(i + j) >> 1].prob;
-              int t = b[0].prob;
-              while (i <= j)
-              {
-                  while (b[i].prob > t)
-                      i++;
-                  while (t > b[j].prob)
-                      j--;
-
-                  if (i <= j)
-                  {
-                      if ((b[i].prob < b[j].prob))
-                      {
-                          swap = b[i];
-                          b[i] = b[j];
-                          b[j] = swap;
-                      }
-
-                      i++;
-                      j--;
-                  }
-              }
-        
-              if (left < j)
-                  Quick_sort(b, left, j);
-              if (i < right)
-                  Quick_sort(b, i, right);
-          }
-          */
-
-        void Coding_Shannon(symbol[] a, int left, int right, int sum)
+        void Packing()
         {
-            int rest = 0;     // Sum of probability in one half of the prob table
-            int merge = 0;     // Number of merge character
-            int fringe = 0;   // Merge probability
-
-            if (left != right)
-                if (right != 0)
+            string path = System.IO.Path.Combine(Environment.CurrentDirectory, "output.bin");
+            try
+            {// Delete the file if it exists.
+                if (File.Exists(path))
                 {
-                    for (int i = left; i <= right; i++)
-                    {
-                        rest += a[i].prob; //Left part of the table
-                        if (a[i].prob > ((sum + 1) >> 1)) // Prob of symbol > sum/2, then usual table cannot be built => need handling
-                        {                                 // Here it is...
-                            //a[i].code.push_back(1);
-                            merge = i;
-                            fringe = a[i].prob;
-                            continue;
-                        }
-                        if (rest <= ((sum + 1) >> 1))     // Symbol is in the first half of the prob table
-                        {
-                            //a[i].code.push_back(1);       // Write '1'
-                            fringe = rest;
-                            merge = i;
-                        }
-                        else                              // Symbol is in the second half of the prob table
-                        {
-                            //a[i].code.push_back(0);       // Write '0'
-                        }
-                    }
-                    if (left <= merge && merge + 1 <= right)  // Divide and handle both halfs
-                    {
-                        Coding_Shannon(a, left, merge, fringe);
-                        Coding_Shannon(a, merge + 1, right, sum - fringe);
-                    }
+                    // Note that no lock is put on the
+                    // file and the possibility exists
+                    // that another process could do
+                    // something with it between
+                    // the calls to Exists and Delete.
+                    File.Delete(path);
                 }
-        }
 
+                // Create the file.
+                using (FileStream fs = File.Create(path))
+                {
+                    foreach (char c in messfile)
+                    {
+
+                        for (int i = 0; i < Cfile.Count; i++)
+                        {
+
+                            if (c == Cfile[i].ch)
+                            {
+                               // Byte[] info = new UTF8Encoding(true).GetBytes(Cfile[i].code);
+                                //  fs.WriteByte(Convert.ToByte(Cfile[i].code));
+                                fs.Write(Cfile[i].byteList.ToArray(), 0, Cfile[i].byteList.Count);
+                            }
+
+
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
 
         //void FormHeader(FILE* f, symbol* &symb, unsigned short alpha)
         //{
