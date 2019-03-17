@@ -28,6 +28,9 @@ namespace ShennonFanoCoder
             public Tree<T> parent;
         }
 
+        /// <summary>
+        /// Класс, содержащий байт, вероятность его встречи и его код
+        /// </summary>
         public class symbol
         {
             public char ch; // the symbol itself
@@ -41,7 +44,11 @@ namespace ShennonFanoCoder
         {
             InitializeComponent();
         }
-
+        /// <summary>
+        /// Выбор файла
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void textBox1_MouseDoubleClick(object sender, MouseEventArgs e) //open file
         {
 
@@ -161,7 +168,7 @@ namespace ShennonFanoCoder
         {
             int Lb =Li, Rb = Ri;
             int sumL= Cfile[0].prob, sumR= sum - Cfile[0].prob; //sums of the parts
-            for (int LeftIndex = Li;sumL<sumR;LeftIndex++) //while  sums are not close
+            for (int LeftIndex = Li; LeftIndex < Cfile.Count &&sumL + Cfile[LeftIndex].prob <= sumR - Cfile[LeftIndex].prob; LeftIndex++) //while  sums are not close
             {
                 sumL += Cfile[LeftIndex].prob;
                 sumR -= Cfile[LeftIndex].prob;
@@ -170,33 +177,38 @@ namespace ShennonFanoCoder
             }
             Tree<symbol> node1 = new Tree<symbol>();
             node1.weight = sumL;
-            Console.WriteLine("SumL -" + sumL);
+            Console.WriteLine("SumL - " + sumL);
             Tree<symbol> node2 = new Tree<symbol>();
             node2.weight = sumR;
-            Console.WriteLine("SumR -" + sumR);
+            Console.WriteLine("SumR - " + sumR);
             node.Left = node1;
             node.Right = node2;
             node1.parent = node;
             node2.parent = node;
-            if (Li -Lb <=0)
+            if (Li < Cfile.Count && Rb < Cfile.Count)
             {
-                node1.leave = Cfile[Lb];
-                Console.WriteLine("leave L -" + node1.leave.ch);
-            }
-            else
-            {
-                BuildingTree(Lb, Li, sumL, node1);
-                Console.WriteLine("Recursion L -");
-            }
-            if (Rb - Ri <= 0)
-            {
-                node2.leave = Cfile[Rb];
-                Console.WriteLine("Leave R - " + node2.leave.ch);
-            }
-            else
-            {
-                BuildingTree(Ri, Rb, sumR, node2);
-                Console.WriteLine("Recursion R -");
+                if (Li - Lb == 0)
+                {
+                    node1.leave = Cfile[Lb];
+                    Console.WriteLine("leave L - " + node1.leave.ch);
+                }
+                else
+                {
+                    Console.WriteLine("Recursion L -");
+                    BuildingTree(Lb, Li, sumL, node1);
+
+                }
+                if (Rb - Ri == 0)
+                {
+                    node2.leave = Cfile[Rb];
+                    Console.WriteLine("Leave R - " + node2.leave.ch);
+                }
+                else
+                {
+                    Console.WriteLine("Recursion R - ");
+                    BuildingTree(Li + 1, Rb, sumR, node2);
+
+                }
             }
         }
 
