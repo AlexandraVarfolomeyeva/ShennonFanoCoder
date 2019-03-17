@@ -34,8 +34,8 @@ namespace ShennonFanoCoder
         public class symbol
         {
             public char ch; // the symbol itself
-            public int prob; // number of symbol and their probability
-            public char[] code; //the code they are going to have
+            public int prob=0; // number of symbol and their probability
+            public string code=""; //the code they are going to have
         }
 
 
@@ -167,12 +167,13 @@ namespace ShennonFanoCoder
                                         //index Left, Right, Sum of all elements, parent
         {
             int Lb =Li, Rb = Ri;
-            int sumL= Cfile[0].prob, sumR= sum - Cfile[0].prob; //sums of the parts
-            for (int LeftIndex = Li; LeftIndex < Cfile.Count &&sumL + Cfile[LeftIndex].prob <= sumR - Cfile[LeftIndex].prob; LeftIndex++) //while  sums are not close
+            int sumL= Cfile[Li].prob, sumR= sum - Cfile[Li].prob; //sums of the parts
+            
+            for (int LeftIndex = Li+1; (LeftIndex < Cfile.Count) && (sumL + Cfile[LeftIndex].prob <= sumR - Cfile[LeftIndex].prob); LeftIndex++) //while  sums are not close
             {
                 sumL += Cfile[LeftIndex].prob;
                 sumR -= Cfile[LeftIndex].prob;
-                Ri--;
+   
                 Li++;
             }
             Tree<symbol> node1 = new Tree<symbol>();
@@ -187,26 +188,39 @@ namespace ShennonFanoCoder
             node2.parent = node;
             if (Li < Cfile.Count && Rb < Cfile.Count)
             {
-                if (Li - Lb == 0)
+                if (sumL>0)
+                if (Li - Lb == 0) //if consists of one element
                 {
                     node1.leave = Cfile[Lb];
-                    Console.WriteLine("leave L - " + node1.leave.ch);
+                        node1.leave.code += "0";
+                    Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code);
                 }
                 else
                 {
                     Console.WriteLine("Recursion L -");
+                        for (int i=Lb;i<=Li;i++)
+                        {
+                            Cfile[i].code += "0";
+                        }
                     BuildingTree(Lb, Li, sumL, node1);
 
                 }
-                if (Rb - Ri == 0)
+                if (sumR>0)
+                if (Rb - (Li+1) == 0) //if consists of one element
                 {
+                    
                     node2.leave = Cfile[Rb];
-                    Console.WriteLine("Leave R - " + node2.leave.ch);
+                        node2.leave.code += "1";
+                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code);
                 }
                 else
                 {
                     Console.WriteLine("Recursion R - ");
-                    BuildingTree(Li + 1, Rb, sumR, node2);
+                        for (int i = Li+1; i <= Rb; i++)
+                        {
+                            Cfile[i].code += "1";
+                        }
+                        BuildingTree(Li+1, Rb, sumR, node2);
 
                 }
             }
