@@ -72,6 +72,9 @@ namespace ShennonFanoCoder
             }
         } //open file
 
+        /// <summary>
+        /// Считывание файла и заполнение алфавита
+        /// </summary>
         void Opening()
         {
             Cfile = new List<symbol>();
@@ -128,7 +131,7 @@ namespace ShennonFanoCoder
         }
 
 
-
+        //функция сравнения алфавита по частоте
         public class NameComparer : IComparer<symbol>
         {
             public int Compare(symbol k1, symbol k2)
@@ -145,6 +148,7 @@ namespace ShennonFanoCoder
                 return 0;
             }
         }
+        //сортировка алфавита по частоте
         void Sort()
         {
             NameComparer cn = new NameComparer();
@@ -153,6 +157,7 @@ namespace ShennonFanoCoder
             Packing();
         }
 
+        //создание дерева и его корня
         void CreateTree()
         {
             tree = new Tree<symbol>();
@@ -167,6 +172,7 @@ namespace ShennonFanoCoder
             BuildingTree(0, Cfile.Count - 1, sum, tree);
         }
 
+        //построение дерева рекурсивно
         void BuildingTree(int Li, int Ri, int sum, Tree<symbol> node)
         //index Left, Right, Sum of all elements, parent
         {
@@ -256,8 +262,13 @@ namespace ShennonFanoCoder
                 // Create the file.
                 using (FileStream fs = File.Create(path))
                 {
+                    // длина входного потока
                     byte[] bytes = BitConverter.GetBytes(N);
                     fs.Write(bytes, 0, bytes.Length);
+
+                    //таблица кодирования
+
+                    //сообщение
                     int b=0;
                     int count=0;
                     for (int t = 0; t < N; t++)
