@@ -21,7 +21,7 @@ namespace ShennonFanoCoder
         public List<symbol> Cfile; //symbols of file to code in array = alphabet
      //   byte[] messfile; //the whole message from the file to code
                          // TreeView<symbol> Tree; //TreeNode -- node
-
+        int[] alphabet = new int[256];
         public class Tree<T>
         {
             public int weight = 0;//sums of parts of table
@@ -45,6 +45,10 @@ namespace ShennonFanoCoder
         public Form1()
         {
             InitializeComponent();
+            for (int i = 0; i < 256; i++)
+            {
+                alphabet[i] = 0;
+            }
         }
         /// <summary>
         /// Выбор файла
@@ -90,6 +94,7 @@ namespace ShennonFanoCoder
              //   messfile[i] = (sr.ReadByte());//Convert.ToByte
              //   label3.Text += messfile[i]; //getting the message
                 buf = sr.ReadByte();
+                alphabet[(int)buf]++;
                 if (Cfile.Count == 0) //if first symbol
                 {
                     symbol c = new symbol();
@@ -125,7 +130,9 @@ namespace ShennonFanoCoder
                     }
                 }
             }
-
+            for (int i = 0; i < 256; i++)
+                Console.Write(alphabet[i]);
+            Console.WriteLine("");
             sr.Close();
             Sort();
         }
@@ -136,16 +143,29 @@ namespace ShennonFanoCoder
         {
             public int Compare(symbol k1, symbol k2)
             {
-                if (k1.prob > k2.prob)
+                if (k1.prob > k2.prob) 
                 {
-                    return -1;
+                    return -1; //не меняем
                 }
                 else if (k1.prob < k2.prob)
                 {
-                    return 1;
+                    return 1; //меняем
                 }
 
-                return 0;
+                return 0; // равно
+            }
+
+            public int Compare2(symbol k1, symbol k2)
+            {
+                if (k1.ch > k2.ch)
+                {
+                    return -1; //не меняем
+                }
+                else if ((k1.ch > k2.ch) && (k1.prob == k2.prob))
+                {
+                    return 1; //меняем
+                }
+                return 0; // равно
             }
         }
         //сортировка алфавита по частоте
@@ -267,6 +287,11 @@ namespace ShennonFanoCoder
                     fs.Write(bytes, 0, bytes.Length);
 
                     //таблица кодирования
+                    for (int i = 0; i < 256; i++)
+                    {
+                        bytes = BitConverter.GetBytes(alphabet[i]);
+                        fs.Write(bytes, 0, bytes.Length);
+                    }
 
                     //сообщение
                     int b=0;
@@ -317,6 +342,7 @@ namespace ShennonFanoCoder
             {
                 Console.WriteLine(ex.ToString());
             }
+
         }
 
     }
