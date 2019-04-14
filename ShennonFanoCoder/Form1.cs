@@ -19,8 +19,8 @@ namespace ShennonFanoCoder
         private OpenFileDialog openFileDialog1; //opening file
         int N; //amount of symbols
         public List<symbol> Cfile; //symbols of file to code in array = alphabet
-     //   byte[] messfile; //the whole message from the file to code
-                         // TreeView<symbol> Tree; //TreeNode -- node
+                                   //   byte[] messfile; //the whole message from the file to code
+                                   // TreeView<symbol> Tree; //TreeNode -- node
         int[] alphabet = new int[256];
         public class Tree<T>
         {
@@ -64,6 +64,7 @@ namespace ShennonFanoCoder
                 textBox1.Text = openFileDialog1.FileName;
                 Opening();
             }
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -74,6 +75,7 @@ namespace ShennonFanoCoder
                 textBox1.Text = openFileDialog1.FileName;
                 Opening();
             }
+
         } //open file
 
         /// <summary>
@@ -83,16 +85,16 @@ namespace ShennonFanoCoder
         {
             Cfile = new List<symbol>();
             System.IO.BinaryReader sr = new
-                   System.IO.BinaryReader(new FileStream(openFileDialog1.FileName,FileMode.Open)); // got file to code
+                   System.IO.BinaryReader(new FileStream(openFileDialog1.FileName, FileMode.Open)); // got file to code
             N = Convert.ToInt32(sr.BaseStream.Length); //got amount of symbols in file to code                                                             
             sr.BaseStream.Position = 0;
-         //   messfile = new byte[N];
-         //   label3.Text = "";
+            //   messfile = new byte[N];
+            //   label3.Text = "";
             byte buf = default(byte);
             for (int i = 0; i < N; i++)
             {
-             //   messfile[i] = (sr.ReadByte());//Convert.ToByte
-             //   label3.Text += messfile[i]; //getting the message
+                //   messfile[i] = (sr.ReadByte());//Convert.ToByte
+                //   label3.Text += messfile[i]; //getting the message
                 buf = sr.ReadByte();
                 alphabet[(int)buf]++;
                 if (Cfile.Count == 0) //if first symbol
@@ -138,46 +140,65 @@ namespace ShennonFanoCoder
         }
 
 
-        //функция сравнения алфавита по частоте
+        /// <summary>
+        ///  функция сравнения алфавита по частоте
+        /// </summary>
         public class NameComparer : IComparer<symbol>
         {
             public int Compare(symbol k1, symbol k2)
             {
-                if (k1.prob > k2.prob) 
+                if (k1.prob > k2.prob)
                 {
-                    return -1; //не меняем
+                    Console.WriteLine(k1.prob + " > " + k2.prob);
+                    return -1; //меньше
                 }
                 else if (k1.prob < k2.prob)
                 {
-                    return 1; //меняем
+                    Console.WriteLine(k1.prob + " < " + k2.prob + " or " + k1.ch + " < " + k2.ch);
+                    return 1; //больше
                 }
-
-                return 0; // равно
+                else return 0; // равно
             }
 
-            public int Compare2(symbol k1, symbol k2)
+        }
+        /// <summary>
+        /// функция сравнения алфавита по байту
+        /// </summary>
+        public class NameComparer1 : IComparer<symbol>
+        {
+            public int Compare(symbol k1, symbol k2)
             {
                 if (k1.ch > k2.ch)
                 {
-                    return -1; //не меняем
+                    Console.WriteLine(k1.ch + " > " + k2.ch);
+                    return 1; //больше
                 }
-                else if ((k1.ch > k2.ch) && (k1.prob == k2.prob))
+                else if (k1.ch < k2.ch)
                 {
-                    return 1; //меняем
+                    Console.WriteLine(k1.ch + " < " + k2.ch);
+                    return -1; //меньше
                 }
-                return 0; // равно
+                else return 0; // равно
             }
+
         }
-        //сортировка алфавита по частоте
+        /// <summary>
+        /// сортировка алфавита по частоте
+        /// </summary>
         void Sort()
         {
+            NameComparer1 cn1 = new NameComparer1();
+            Cfile.Sort(cn1);
             NameComparer cn = new NameComparer();
             Cfile.Sort(cn);
             CreateTree();
             Packing();
+            Application.Exit();
         }
 
-        //создание дерева и его корня
+        /// <summary>
+        /// создание дерева и его корня
+        /// </summary>
         void CreateTree()
         {
             tree = new Tree<symbol>();
@@ -192,7 +213,9 @@ namespace ShennonFanoCoder
             BuildingTree(0, Cfile.Count - 1, sum, tree);
         }
 
-        //построение дерева рекурсивно
+        /// <summary>
+        ///   построение дерева рекурсивно
+        /// </summary>
         void BuildingTree(int Li, int Ri, int sum, Tree<symbol> node)
         //index Left, Right, Sum of all elements, parent
         {
@@ -223,9 +246,9 @@ namespace ShennonFanoCoder
                     {
                         node1.leave = Cfile[Lb];
                         node1.leave.code += "0";
-                       // node1.leave.byteList.Add(0);
-                      //  node1.leave.byteList.Add(Convert.ToByte(0, 2));
-                        Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code + " byte " );
+                        // node1.leave.byteList.Add(0);
+                        //  node1.leave.byteList.Add(Convert.ToByte(0, 2));
+                        Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code + " byte ");
                     }
                     else
                     {
@@ -233,7 +256,7 @@ namespace ShennonFanoCoder
                         for (int i = Lb; i <= Li; i++)
                         {
                             Cfile[i].code += "0";
-                         //   Cfile[i].byteList.Add(0);
+                            //   Cfile[i].byteList.Add(0);
                         }
                         BuildingTree(Lb, Li, sumL, node1);
 
@@ -244,8 +267,8 @@ namespace ShennonFanoCoder
 
                         node2.leave = Cfile[Rb];
                         node2.leave.code += "1";
-                     //   node2.leave.byteList.Add(1);
-                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code + " byte " );
+                        //   node2.leave.byteList.Add(1);
+                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code + " byte ");
                     }
                     else
                     {
@@ -253,7 +276,7 @@ namespace ShennonFanoCoder
                         for (int i = Li + 1; i <= Rb; i++)
                         {
                             Cfile[i].code += "1";
-                       //     Cfile[i].byteList.Add(1);
+                            //     Cfile[i].byteList.Add(1);
                         }
                         BuildingTree(Li + 1, Rb, sumR, node2);
 
@@ -294,8 +317,8 @@ namespace ShennonFanoCoder
                     }
 
                     //сообщение
-                    int b=0;
-                    int count=0;
+                    int b = 0;
+                    int count = 0;
                     for (int t = 0; t < N; t++)
                     {
                         byte buf = sr.ReadByte();
@@ -304,9 +327,6 @@ namespace ShennonFanoCoder
 
                             if (buf == Cfile[i].ch)
                             {
-                                // Byte[] info = new UTF8Encoding(true).GetBytes(Cfile[i].code);
-                                //  fs.WriteByte(Convert.ToByte(Cfile[i].code));
-                                //fs.Write(Cfile[i].byteList.ToArray(), 0, Cfile[i].byteList.Count);
                                 for (int j = 0; j < Cfile[i].code.Length; j++)
                                 {
                                     b += Convert.ToInt32(Cfile[i].code[j]) - 48;
