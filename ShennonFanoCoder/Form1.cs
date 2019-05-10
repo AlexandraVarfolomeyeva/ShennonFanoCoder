@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -18,9 +19,9 @@ namespace ShennonFanoCoder
         private OpenFileDialog openFileDialog1; //opening file
         int N; //amount of symbols
         public List<symbol> Cfile; //symbols of file to code in array = alphabet
-        char[] messfile; //the whole message from the file to code
-                         // TreeView<symbol> Tree; //TreeNode -- node
-
+                                   //   byte[] messfile; //the whole message from the file to code
+                                   // TreeView<symbol> Tree; //TreeNode -- node
+        int[] alphabet = new int[256];
         public class Tree<T>
         {
             public int weight = 0;//sums of parts of table
@@ -28,23 +29,26 @@ namespace ShennonFanoCoder
             public T leave = default(T);//null
             public Tree<T> parent;
         }
-
+        Tree<symbol> tree;
         /// <summary>
         /// Класс, содержащий байт, вероятность его встречи и его код
         /// </summary>
         public class symbol
         {
-            public char ch; // the symbol itself
+            public byte ch; // the symbol itself
             public int prob = 0; // number of symbol and their probability
             public string code = ""; //the code they are going to have
-           public List<Byte> byteList = new List<Byte>();
         }
-
+        public string name;
 
 
         public Form1()
         {
             InitializeComponent();
+            for (int i = 0; i < 256; i++)
+            {
+                alphabet[i] = 0;
+            }
         }
         /// <summary>
         /// Выбор файла
@@ -58,8 +62,10 @@ namespace ShennonFanoCoder
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBox1.Text = openFileDialog1.FileName;
+                name = openFileDialog1.FileName;
                 Opening();
             }
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -68,28 +74,37 @@ namespace ShennonFanoCoder
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBox1.Text = openFileDialog1.FileName;
+                name = openFileDialog1.FileName;
                 Opening();
             }
+
         } //open file
 
+        /// <summary>
+        /// Считывание файла и заполнение алфавита
+        /// </summary>
         void Opening()
         {
+            label2.Text = "Подождите, идет подготовка!";
             Cfile = new List<symbol>();
-            System.IO.StreamReader sr = new
-                   System.IO.StreamReader(openFileDialog1.FileName); // got file to code
+            System.IO.BinaryReader sr = new
+                   System.IO.BinaryReader(new FileStream(openFileDialog1.FileName, FileMode.Open)); // got file to code
             N = Convert.ToInt32(sr.BaseStream.Length); //got amount of symbols in file to code                                                             
             sr.BaseStream.Position = 0;
-            messfile = new char[N];
-            label3.Text = "";
+            //   messfile = new byte[N];
+            //   label3.Text = "";
+            byte buf = default(byte);
             for (int i = 0; i < N; i++)
             {
-                messfile[i] = Convert.ToChar(sr.Read());
-                label3.Text += messfile[i]; //getting the message
+                //   messfile[i] = (sr.ReadByte());//Convert.ToByte
+                //   label3.Text += messfile[i]; //getting the message
+                buf = sr.ReadByte();
+                alphabet[(int)buf]++;
                 if (Cfile.Count == 0) //if first symbol
                 {
                     symbol c = new symbol();
-                    c.ch = messfile[i];
-                    c.code = null;
+                    c.ch = buf;
+                    c.code = "";
                     c.prob = 1;
                     Cfile.Add(c);
                 }
@@ -101,7 +116,7 @@ namespace ShennonFanoCoder
 
                         if (!done)
                         {
-                            if (Cfile[j].ch == messfile[i]) // if exists 
+                            if (Cfile[j].ch == buf) // if exists 
                             {
                                 Cfile[j].prob++;
                                 done = true;
@@ -110,7 +125,7 @@ namespace ShennonFanoCoder
                             if (j == Cfile.Count - 1)
                             {
                                 symbol c = new symbol();
-                                c.ch = messfile[i];
+                                c.ch = buf;
                                 c.code = null;
                                 c.prob = 1;
                                 Cfile.Add(c);
@@ -120,40 +135,78 @@ namespace ShennonFanoCoder
                     }
                 }
             }
-
+            // for (int i = 0; i < 256; i++)
+            //           Console.Write(alphabet[i]);
+            //       Console.WriteLine("");
+            progressBar1.Maximum = N*2;
             sr.Close();
             Sort();
+            Packing();
+            label2.Text = "Успешно закодировано!";
+            progressBar1.Value = 0;
         }
 
 
-
+        /// <summary>
+        ///  функция сравнения алфавита по частоте
+        /// </summary>
         public class NameComparer : IComparer<symbol>
         {
             public int Compare(symbol k1, symbol k2)
             {
                 if (k1.prob > k2.prob)
                 {
-                    return -1;
+           //         Console.WriteLine(k1.prob + " > " + k2.prob);
+                    return -1; //меньше
                 }
                 else if (k1.prob < k2.prob)
                 {
-                    return 1;
+           //         Console.WriteLine(k1.prob + " < " + k2.prob + " or " + k1.ch + " < " + k2.ch);
+                    return 1; //больше
                 }
-
-                return 0;
+                else return 0; // равно
             }
+
         }
+        /// <summary>
+        /// функция сравнения алфавита по байту
+        /// </summary>
+        public class NameComparer1 : IComparer<symbol>
+        {
+            public int Compare(symbol k1, symbol k2)
+            {
+                if (k1.ch > k2.ch)
+                {
+          //          Console.WriteLine(k1.ch + " > " + k2.ch);
+                    return 1; //больше
+                }
+                else if (k1.ch < k2.ch)
+                {
+           //         Console.WriteLine(k1.ch + " < " + k2.ch);
+                    return -1; //меньше
+                }
+                else return 0; // равно
+            }
+
+        }
+        /// <summary>
+        /// сортировка алфавита по частоте
+        /// </summary>
         void Sort()
         {
+            NameComparer1 cn1 = new NameComparer1();
+            Cfile.Sort(cn1);
             NameComparer cn = new NameComparer();
             Cfile.Sort(cn);
             CreateTree();
-            Packing();
         }
 
+        /// <summary>
+        /// создание дерева и его корня
+        /// </summary>
         void CreateTree()
         {
-            Tree<symbol> tree = new Tree<symbol>();
+            tree = new Tree<symbol>();
 
             int sum = 0;
             for (int i = 0; i < Cfile.Count; i++)
@@ -165,6 +218,9 @@ namespace ShennonFanoCoder
             BuildingTree(0, Cfile.Count - 1, sum, tree);
         }
 
+        /// <summary>
+        ///   построение дерева рекурсивно
+        /// </summary>
         void BuildingTree(int Li, int Ri, int sum, Tree<symbol> node)
         //index Left, Right, Sum of all elements, parent
         {
@@ -180,10 +236,10 @@ namespace ShennonFanoCoder
             }
             Tree<symbol> node1 = new Tree<symbol>();
             node1.weight = sumL;
-            Console.WriteLine("SumL - " + sumL);
+         //   Console.WriteLine("SumL - " + sumL);
             Tree<symbol> node2 = new Tree<symbol>();
             node2.weight = sumR;
-            Console.WriteLine("SumR - " + sumR);
+         //   Console.WriteLine("SumR - " + sumR);
             node.Left = node1;
             node.Right = node2;
             node1.parent = node;
@@ -195,17 +251,18 @@ namespace ShennonFanoCoder
                     {
                         node1.leave = Cfile[Lb];
                         node1.leave.code += "0";
-                        node1.leave.byteList.Add(0);
-                      //  node1.leave.byteList.Add(Convert.ToByte(0, 2));
-                        Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code + " byte " + Encoding.ASCII.GetString(node1.leave.byteList.ToArray()));
+                        progressBar1.Value++;
+                        // node1.leave.byteList.Add(0);
+                        //  node1.leave.byteList.Add(Convert.ToByte(0, 2));
+                        //        Console.WriteLine("leave L - " + node1.leave.ch + " " + node1.leave.code + " byte ");
                     }
                     else
                     {
-                        Console.WriteLine("Recursion L -");
+                    //    Console.WriteLine("Recursion L -");
                         for (int i = Lb; i <= Li; i++)
                         {
                             Cfile[i].code += "0";
-                            Cfile[i].byteList.Add(0);
+                            //   Cfile[i].byteList.Add(0);
                         }
                         BuildingTree(Lb, Li, sumL, node1);
 
@@ -216,16 +273,17 @@ namespace ShennonFanoCoder
 
                         node2.leave = Cfile[Rb];
                         node2.leave.code += "1";
-                        node2.leave.byteList.Add(1);
-                        Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code + " byte " + Encoding.ASCII.GetString(node2.leave.byteList.ToArray()));
+                        //   node2.leave.byteList.Add(1);
+                        progressBar1.Value++;
+                        //      Console.WriteLine("Leave R - " + node2.leave.ch + " " + node2.leave.code + " byte ");
                     }
                     else
                     {
-                        Console.WriteLine("Recursion R - ");
+                      //  Console.WriteLine("Recursion R - ");
                         for (int i = Li + 1; i <= Rb; i++)
                         {
                             Cfile[i].code += "1";
-                            Cfile[i].byteList.Add(1);
+                            //     Cfile[i].byteList.Add(1);
                         }
                         BuildingTree(Li + 1, Rb, sumR, node2);
 
@@ -235,7 +293,7 @@ namespace ShennonFanoCoder
 
         void Packing()
         {
-            string path = System.IO.Path.Combine(Environment.CurrentDirectory, "output.bin");
+            string path = System.IO.Path.Combine(Environment.CurrentDirectory, name + ".fan");//name+".fan""output.bin"
             try
             {// Delete the file if it exists.
                 if (File.Exists(path))
@@ -247,135 +305,187 @@ namespace ShennonFanoCoder
                     // the calls to Exists and Delete.
                     File.Delete(path);
                 }
-
+                System.IO.BinaryReader sr = new
+                  System.IO.BinaryReader(new FileStream(name, FileMode.Open)); // got file to code
+                N = Convert.ToInt32(sr.BaseStream.Length); //got amount of symbols in file to code                                                             
+                sr.BaseStream.Position = 0;
                 // Create the file.
                 using (FileStream fs = File.Create(path))
                 {
-                    foreach (char c in messfile)
-                    {
+                    // длина входного потока
+                    byte[] bytes = BitConverter.GetBytes(N);
+                    fs.Write(bytes, 0, bytes.Length);
 
+                    //таблица кодирования
+                    for (int i = 0; i < 256; i++)
+                    {
+                        bytes = BitConverter.GetBytes(alphabet[i]);
+                        fs.Write(bytes, 0, bytes.Length);
+                    }
+
+                    //сообщение
+                    int b = 0;
+                    int count = 0;
+                    for (int t = 0; t < N; t++)
+                    {
+                        progressBar1.Value++;
+                        byte buf = sr.ReadByte();
                         for (int i = 0; i < Cfile.Count; i++)
                         {
-
-                            if (c == Cfile[i].ch)
+                           
+                            if (buf == Cfile[i].ch)
                             {
-                               // Byte[] info = new UTF8Encoding(true).GetBytes(Cfile[i].code);
-                                //  fs.WriteByte(Convert.ToByte(Cfile[i].code));
-                                fs.Write(Cfile[i].byteList.ToArray(), 0, Cfile[i].byteList.Count);
+                                for (int j = 0; j < Cfile[i].code.Length; j++)
+                                {
+                                    b += Convert.ToInt32(Cfile[i].code[j]) - 48;
+                                    count++;
+                                    if (count == 8)
+                                    {
+                                        byte k = Convert.ToByte(b % 256);
+                                        fs.WriteByte(k);
+                                        count = 0;
+                                        b = 0;
+                                  //      Console.WriteLine("Pushed symbol " + k);
+                                    }
+                                    else
+                                    {
+                                        b = Convert.ToInt32(b) << 1;
+                                    }
+                                   
+                                }
+                          //      Console.WriteLine("Read symbol " + buf);
+                           //     Console.WriteLine("Code symbol " + Cfile[i].code);
+                                 break;
                             }
 
 
                         }
+
+                    }
+                    if (count != 0)
+                    {
+                        byte k = Convert.ToByte(b % 256);
+                        fs.WriteByte(k);
+                   //     Console.WriteLine("Pushed symbol " + k);
                     }
 
                 }
+                sr.Close();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+        }
+
+        void Decoder(string name)
+        {
+            FileStream fs = new FileStream(name+".fan", FileMode.Open, FileAccess.Read);
+            BinaryReader r = new BinaryReader(fs);
+            byte b = 0;
+            int k;
+            int count = 0;
+            N = 0;
+           
+            N = r.ReadInt32();
+            progressBar1.Maximum=N;
+            
+            Cfile = null;
+            int per = 0;
+            Cfile = new List<symbol>();
+            for (int i = 0; i < 256; i++)
+            {
+                //progressBar1.Value++;
+                per = r.ReadInt32();
+                if (per != 0)
+                {
+                   
+                    symbol c = new symbol();
+                    c.ch = (byte)i;
+                    c.prob = per;
+                    Cfile.Add(c);
+                }
+            }
+
+            tree = null;
+            Sort();
+            Tree<symbol> current = tree;
+            string path = System.IO.Path.Combine(Environment.CurrentDirectory, name);
+            try
+            {// Delete the file if it exists.
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+                int g=0;
+                progressBar1.Value = 0;
+                using (FileStream stream = File.Create(path))
+                {
+                    while (g < N)
+                    {
+                       
+                        if (count == 0)
+                        {
+                            b = r.ReadByte();
+                            
+                         //   Console.WriteLine("Read " + b);
+                            count = 8;
+                        }
+
+                        count--;
+                        k = ((Convert.ToInt32(b)) >> count) & 1;
+                        if (k == 0)//в левое поддерево
+                        {
+                            current = current.Left;
+                         //   Console.WriteLine("to left");
+                        }
+                        else {
+                            current = current.Right;
+                         //   Console.WriteLine("to right");
+                        }
+
+                        if (current.leave != null)
+                        {
+                            stream.WriteByte(current.leave.ch);
+                            g++;
+                            progressBar1.Value=N;
+                         //   Console.WriteLine("Write " + current.leave.ch);
+                            current = tree;
+                        }
+                    }
+                }
+            }
+
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
         }
 
-        //void FormHeader(FILE* f, symbol* &symb, unsigned short alpha)
-        //{
-        //    if (alpha == 1)
-        //    {
-        //        fwrite(&alpha, 1, 1, f);
-        //        fputc(symb[0].ch, f);
-        //        fputc(0, f);                        // Write pairs of type: <Count, Length>
-        //        fputc(1, f);
-        //        printf("\nHeader size 4\n");
-        //    }
-        //    else
-        //    {
-        //        fwrite(&alpha, 1, 1, f);            // Write the number of characters, used in the code table
-        //                                            // In another words - the alphabet of the message
-        //        for (unsigned short i = 0; i < alpha; i++)
-        //        {
-        //            fputc(symb[i].ch, f);           // Write sequentially symbols from the code table
-        //        }
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                label2.Text = "Подождите, идет подготовка!";
+                openFileDialog1 = new OpenFileDialog();
+                if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    textBox2.Text = openFileDialog1.FileName;
+                    name = openFileDialog1.FileName;
+                }
+                int len = name.Length - 4;
+                name = name.Remove(len);
+                Decoder(name);
 
-        //        unsigned int count = 0;             // This will count the number of codes with the same length in succession
-        //        unsigned int hsize = alpha;
-        //        for (unsigned short i = 0; i < alpha; i++)
-        //        {
-        //            while (symb[i].code.size() == symb[i + 1].code.size())
-        //            {
-        //                ++count;                    // Here compare code length of the neighbouring symbols
-        //                ++i;                        // and count them, if codes are of the same length
-        //            }
-        //            fputc(count, f);                // Write pairs of type: <Count, Length>
-        //            fputc(symb[i].code.size(), f);
-        //            hsize += 2;
-        //            count = 0;
-        //        }
-
-        //        printf("\nHeader size %d\n", hsize + 1);
-        //    }
-        //}
-
-
-        // -----------------------------------------------------------------------
-        // Write coded info into file
-
-        //void Pack(symbol* &symb, unsigned int size, unsigned char* &message, unsigned short alpha)
-        //{
-        //    unsigned char c;                  // Char to form a byte
-        //    unsigned char cnt = 0;
-        //    double aver = 0.0;
-        //    FILE* f = fopen("Target.b", "wb");
-
-        //    FormHeader(f, symb, alpha);       // Put the service info
-
-        //    // Here, coding the message
-        //    for (unsigned int k = 0; k < size; k++)
-        //    {
-        //        for (unsigned short i = 0; i < alpha; i++)
-        //        {
-        //            if (symb[i].ch != message[k]) continue;
-        //            for (vector < unsigned char >::iterator j = symb[i].code.begin(); j != symb[i].code.end(); j++)
-        //            {
-        //                if (*j == 1)
-        //                {
-        //                    c = (c << 1) | 1;      // Write '1'
-        //                    ++cnt;
-        //                }
-        //                else
-        //                {
-        //                    ++cnt;                 // Write '0'
-        //                    c <<= 1;
-        //                }
-        //                if (cnt == 7)              // Have a byte
-        //                {
-        //                    aver += 8;
-        //                    cnt = 0;
-        //                    fprintf(f, "%c", c);
-        //                    c = 0;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    aver = aver + cnt + 1;
-        //    unsigned char shift = 0;
-        //    if (cnt != 0)
-        //    {
-        //        shift = 7 - cnt;
-        //        while (cnt != 7)
-        //        {
-        //            c <<= 1;
-        //            ++cnt;
-        //        }
-        //        fprintf(f, "%c", c);
-        //    }
-
-        //    fwrite(&shift, 1, 1, f);
-
-        //    printf("Average quantity of bits per symbol: %f\n", aver / ((float)size));
-
-        //    fclose(f);
-        //}
-
-
+                label2.Text = "Успешно декодировано!";
+                progressBar1.Value = 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
 
     }
 }
